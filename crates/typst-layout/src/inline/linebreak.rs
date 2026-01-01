@@ -19,6 +19,13 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use super::*;
 
+/// Whether the character is a CJK character.
+fn is_cjk_script(c: char) -> bool {
+    use Script::*;
+    // U+30FC: Katakana-Hiragana Prolonged Sound Mark
+    matches!(c.script(), Hiragana | Katakana | Han | Hangul) || c == '\u{30FC}'
+}
+
 /// The cost of a line or inline layout.
 type Cost = f64;
 
@@ -889,13 +896,6 @@ fn linebreak_link(link: &str, mut f: impl FnMut(usize)) {
 
         prev = class;
     }
-}
-
-/// Whether the character is a CJK character.
-fn is_cjk_script(c: char) -> bool {
-    use Script::*;
-    // U+30FC: Katakana-Hiragana Prolonged Sound Mark
-    matches!(c.script(), Hiragana | Katakana | Han | Hangul) || c == '\u{30FC}'
 }
 
 /// Whether hyphenation is enabled at the given offset.
