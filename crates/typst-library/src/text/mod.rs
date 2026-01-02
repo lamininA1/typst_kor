@@ -530,11 +530,11 @@ pub struct TextElem {
 
     /// How to handle line breaks in CJK text.
     ///
-    /// - `{auto}`: Automatically choose the breaking behavior. Currently, this
-    ///   is the same as `{distribute}`.
     /// - `{distribute}`: Allow breaks between any CJK characters.
     /// - `{keep-all}`: Keep CJK words together (only break at spaces or
     ///   punctuation).
+    /// - `{whitespace}`: Keep CJK words together and do not stretch the space between
+    ///   CJK characters during justification.
     ///
     /// ```example
     /// #set page(width: 50pt)
@@ -543,6 +543,10 @@ pub struct TextElem {
     /// 글자 단위 줄바꿈이 가능합니다.
     ///
     /// #set text(cjk-breaking: "keep-all")
+    /// 한글은 띄어쓰기가 있어도
+    /// 글자 단위 줄바꿈이 가능합니다.
+    ///
+    /// #set text(cjk-breaking: "whitespace")
     /// 한글은 띄어쓰기가 있어도
     /// 글자 단위 줄바꿈이 가능합니다.
     /// ```
@@ -1248,6 +1252,8 @@ pub enum CjkBreaking {
     Distribute,
     /// Keep CJK words together (only break at spaces or punctuation).
     KeepAll,
+    /// Keep CJK words together and do not stretch them during justification.
+    Whitespace,
 }
 
 /// Which kind of numbers / figures to select.
