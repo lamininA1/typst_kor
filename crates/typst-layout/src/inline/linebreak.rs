@@ -727,11 +727,13 @@ fn breakpoints(p: &Preparation, mut f: impl FnMut(usize, Breakpoint)) {
         // at offset 0, but we don't want it.
         let Some(c) = text[..point].chars().next_back() else { continue };
 
-        // If cjk-breaking is set to 'keep-all', we want to skip break
+        // If cjk-breaking is set to 'keep-all' or 'word', we want to skip break
         // opportunities between two CJK characters.
         #[allow(clippy::collapsible_if)]
-        if matches!(p.config.cjk_breaking, Smart::Custom(CjkBreaking::KeepAll))
-            && point < text.len()
+        if matches!(
+            p.config.cjk_breaking,
+            Smart::Custom(CjkBreaking::KeepAll | CjkBreaking::Word)
+        ) && point < text.len()
         {
             if let Some(next_c) = text[point..].chars().next() {
                 if is_cjk_script(c) && is_cjk_script(next_c) {

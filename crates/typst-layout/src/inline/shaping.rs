@@ -14,8 +14,9 @@ use typst_library::foundations::{Regex, Smart, StyleChain};
 use typst_library::layout::{Abs, Dir, Em, Frame, FrameItem, Point, Rel, Size};
 use typst_library::model::{JustificationLimits, ParElem};
 use typst_library::text::{
-    Font, FontFamily, FontVariant, Glyph, Lang, Region, ShiftSettings, TextEdgeBounds,
-    TextElem, TextItem, families, features, is_default_ignorable, language, variant,
+    CjkBreaking, Font, FontFamily, FontVariant, Glyph, Lang, Region, ShiftSettings,
+    TextEdgeBounds, TextElem, TextItem, families, features, is_default_ignorable,
+    language, variant,
 };
 use typst_utils::SliceExt;
 use unicode_bidi::{BidiInfo, Level as BidiLevel};
@@ -50,6 +51,8 @@ pub struct ShapedText<'a> {
     pub styles: StyleChain<'a>,
     /// The font variant.
     pub variant: FontVariant,
+    /// CJK breaking behavior.
+    pub cjk_breaking: Smart<CjkBreaking>,
     /// The shaped glyphs.
     pub glyphs: Glyphs<'a>,
 }
@@ -555,6 +558,7 @@ impl<'a> ShapedText<'a> {
                 region: self.region,
                 styles: self.styles,
                 variant: self.variant,
+                cjk_breaking: self.cjk_breaking,
                 glyphs: Glyphs::from_slice(glyphs),
             }
         } else {
@@ -615,6 +619,7 @@ impl<'a> ShapedText<'a> {
                 region: base.region,
                 styles: base.styles,
                 variant: base.variant,
+                cjk_breaking: base.cjk_breaking,
                 glyphs: Glyphs::from_vec(vec![ShapedGlyph {
                     font,
                     glyph_id: glyph_id.0,
@@ -797,6 +802,7 @@ fn shape<'a>(
         used: vec![],
         styles,
         variant: variant(styles),
+        cjk_breaking: styles.get(TextElem::cjk_breaking),
         features: features(styles),
         fallback: styles.get(TextElem::fallback),
         dir,
@@ -823,6 +829,7 @@ fn shape<'a>(
         region,
         styles,
         variant: ctx.variant,
+        cjk_breaking: ctx.cjk_breaking,
         glyphs: Glyphs::from_vec(ctx.glyphs),
     }
 }
@@ -835,6 +842,7 @@ struct ShapingContext<'a> {
     styles: StyleChain<'a>,
     size: Abs,
     variant: FontVariant,
+    cjk_breaking: Smart<CjkBreaking>,
     features: Vec<rustybuzz::Feature>,
     fallback: bool,
     dir: Dir,
@@ -1083,6 +1091,7 @@ fn shape_segment<'a>(
                     script,
                     x_advance,
                     Adjustability::default().stretchability,
+                ctx.cjk_breaking,
                 ),
                 script,
             });
@@ -1234,6 +1243,7 @@ fn shape_tofus(ctx: &mut ShapingContext, base: usize, text: &str, font: Font) {
                 script,
                 x_advance,
                 Adjustability::default().stretchability,
+                ctx.cjk_breaking,
             ),
             script,
         });
@@ -1478,11 +1488,20 @@ fn is_justifiable(
     script: Script,
     x_advance: Em,
     stretchability: (Em, Em),
+    cjk_breaking: Smart<CjkBreaking>,
 ) -> bool {
     // punctuation style is not relevant here.
     let style = CjkPunctStyle::Gb;
-    is_space(c)
-        || is_cj_script(c, script)
+
+    if is_space(c) {
+        return true;
+    }
+
+    if matches!(cjk_breaking, Smart::Custom(CjkBreaking::Word)) {
+        return false;
+    }
+
+    is_cj_script(c, script)
         || is_cjk_left_aligned_punctuation(c, x_advance, stretchability, style)
         || is_cjk_right_aligned_punctuation(c, x_advance, stretchability)
         || is_cjk_center_aligned_punctuation(c, style)
