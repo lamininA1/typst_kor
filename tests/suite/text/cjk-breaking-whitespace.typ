@@ -1,4 +1,4 @@
---- cjk-breaking-word paged ---
+--- cjk-breaking-whitespace paged ---
 #set page(width: 100pt, margin: 0pt)
 #set text(font: "Noto Serif CJK SC", size: 10pt)
 #set par(justify: true)
@@ -14,7 +14,7 @@
   #text_content
 ]
 
-#text(cjk-breaking: "word")[
+#text(cjk-breaking: "whitespace")[
   #text_content
 ]
 
@@ -29,17 +29,17 @@
   #mixed_content
 ]
 
-#text(cjk-breaking: "word")[
+#text(cjk-breaking: "whitespace")[
   #mixed_content
 ]
 
-// Test with Number and Latin mixed (Keep-all allows break, Word should not)
+// Test with Number and Latin mixed (Keep-all allows break, Whitespace should not)
 #let mixed_word = "Word한글123"
 
 #text(cjk-breaking: "keep-all")[
   #mixed_word
 ]
 
-#text(cjk-breaking: "word")[
+#text(cjk-breaking: "whitespace")[
   #mixed_word
 ]

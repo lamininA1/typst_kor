@@ -1324,7 +1324,7 @@ fn calculate_adjustability(ctx: &mut ShapingContext, lang: Lang, region: Option<
         }
     }
 
-    if matches!(ctx.cjk_breaking, Smart::Custom(CjkBreaking::Word)) {
+    if matches!(ctx.cjk_breaking, Smart::Custom(CjkBreaking::Whitespace)) {
         for glyph in ctx.glyphs.iter_mut() {
             if !glyph.is_space() {
                 glyph.adjustability = Adjustability::default();
@@ -1505,7 +1505,7 @@ fn is_justifiable(
         return true;
     }
 
-    if matches!(cjk_breaking, Smart::Custom(CjkBreaking::Word)) {
+    if matches!(cjk_breaking, Smart::Custom(CjkBreaking::Whitespace)) {
         return false;
     }
 

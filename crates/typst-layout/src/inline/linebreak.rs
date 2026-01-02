@@ -740,11 +740,11 @@ fn breakpoints(p: &Preparation, mut f: impl FnMut(usize, Breakpoint)) {
             }
         }
 
-        // If cjk-breaking is set to 'word', we want to skip break opportunities
+        // If cjk-breaking is set to 'whitespace', we want to skip break opportunities
         // unless they are at a whitespace boundary (e.g. between a word and a
         // space). This effectively tokenizes by whitespace.
         #[allow(clippy::collapsible_if)]
-        if matches!(p.config.cjk_breaking, Smart::Custom(CjkBreaking::Word))
+        if matches!(p.config.cjk_breaking, Smart::Custom(CjkBreaking::Whitespace))
             && point < text.len()
         {
             if let Some(next_c) = text[point..].chars().next() {

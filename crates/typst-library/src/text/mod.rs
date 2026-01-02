@@ -535,7 +535,7 @@ pub struct TextElem {
     /// - `{distribute}`: Allow breaks between any CJK characters.
     /// - `{keep-all}`: Keep CJK words together (only break at spaces or
     ///   punctuation).
-    /// - `{word}`: Keep CJK words together and do not stretch the space between
+    /// - `{whitespace}`: Keep CJK words together and do not stretch the space between
     ///   CJK characters during justification.
     ///
     /// ```example
@@ -548,7 +548,7 @@ pub struct TextElem {
     /// 한글은 띄어쓰기가 있어도
     /// 글자 단위 줄바꿈이 가능합니다.
     ///
-    /// #set text(cjk-breaking: "word")
+    /// #set text(cjk-breaking: "whitespace")
     /// 한글은 띄어쓰기가 있어도
     /// 글자 단위 줄바꿈이 가능합니다.
     /// ```
@@ -1255,7 +1255,7 @@ pub enum CjkBreaking {
     /// Keep CJK words together (only break at spaces or punctuation).
     KeepAll,
     /// Keep CJK words together and do not stretch them during justification.
-    Word,
+    Whitespace,
 }
 
 /// Which kind of numbers / figures to select.
