@@ -32,3 +32,14 @@
 #text(cjk-breaking: "word")[
   #mixed_content
 ]
+
+// Test with Number and Latin mixed (Keep-all allows break, Word should not)
+#let mixed_word = "Word한글123"
+
+#text(cjk-breaking: "keep-all")[
+  #mixed_word
+]
+
+#text(cjk-breaking: "word")[
+  #mixed_word
+]

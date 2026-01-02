@@ -1323,6 +1323,14 @@ fn calculate_adjustability(ctx: &mut ShapingContext, lang: Lang, region: Option<
             next.shrink_left(delta - left_delta);
         }
     }
+
+    if matches!(ctx.cjk_breaking, Smart::Custom(CjkBreaking::Word)) {
+        for glyph in ctx.glyphs.iter_mut() {
+            if !glyph.is_space() {
+                glyph.adjustability = Adjustability::default();
+            }
+        }
+    }
 }
 
 /// Difference between non-breaking and normal space.
