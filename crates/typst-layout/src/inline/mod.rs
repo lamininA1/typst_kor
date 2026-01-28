@@ -23,7 +23,7 @@ use typst_library::model::{
     ParLine, ParLineMarker, TermsElem,
 };
 use typst_library::routines::{Arenas, Pair, RealizationKind, Routines};
-use typst_library::text::{CjkBreaking, Costs, Lang, TextElem};
+use typst_library::text::{Breaking, BreakingMode, CjkBreaking, Costs, Lang, TextElem};
 use typst_utils::{Numeric, Protected, SliceExt};
 
 use self::collect::{Item, Segment, SpanMapper, collect};
@@ -235,8 +235,24 @@ fn configuration(
             .map(|uniform| uniform.unwrap_or(justify)),
         lang: shared_get(children, shared, |s| s.get(TextElem::lang)),
         fallback: shared.get(TextElem::fallback),
-        cjk_latin_spacing: shared.get(TextElem::cjk_latin_spacing).is_auto(),
-        cjk_breaking: shared.get(TextElem::cjk_breaking),
+        breaking: {
+            let mut breaking = shared.get(TextElem::breaking);
+            if breaking.mode.is_auto() {
+                breaking.mode = match shared.get(TextElem::cjk_breaking) {
+                    Smart::Custom(CjkBreaking::Distribute) => Smart::Custom(BreakingMode::Distribute),
+                    Smart::Custom(CjkBreaking::KeepAll | CjkBreaking::Whitespace) => Smart::Custom(BreakingMode::Word),
+                    Smart::Auto => Smart::Auto,
+                };
+            }
+            if breaking.autospace.is_auto() && shared.get(TextElem::cjk_latin_spacing).is_custom() {
+                // The `cjk-latin-spacing` property is `Smart<Option<Never>>`.
+                // - `auto` maps to `Smart::Auto` (default true)
+                // - `none` maps to `Smart::Custom(None)`
+                // If it is custom (None), it means the user explicitly disabled it.
+                breaking.autospace = Smart::Custom(false);
+            }
+            breaking
+        },
         costs: shared.get(TextElem::costs),
     }
 }
@@ -291,10 +307,8 @@ struct Config {
     lang: Option<Lang>,
     /// Whether font fallback is enabled.
     fallback: bool,
-    /// Whether to add spacing between CJK and Latin characters.
-    cjk_latin_spacing: bool,
-    /// How to handle line breaks in CJK text.
-    cjk_breaking: Smart<CjkBreaking>,
+    /// How to handle line breaks and spacing.
+    breaking: Breaking,
     /// Costs for various layout decisions.
     costs: Costs,
 }

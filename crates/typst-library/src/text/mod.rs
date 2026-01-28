@@ -330,6 +330,23 @@ pub struct TextElem {
     #[ghost]
     pub cjk_latin_spacing: Smart<Option<Never>>,
 
+    /// How to handle line breaks and spacing.
+    ///
+    /// - `mode`: How to group characters for line breaking.
+    ///   - `{auto}`: Use the default line breaking rules for the text's language.
+    ///   - `{distribute}`: Allow breaks between any characters.
+    ///   - `{word}`: Keep words together.
+    /// - `autospace`: Whether to automatically insert spacing between CJK and Latin characters.
+    ///
+    /// ```example
+    /// #set page(width: 50pt)
+    /// #set text(breaking: (mode: "distribute"))
+    /// This text allows breaks anywhere.
+    /// ```
+    #[fold]
+    #[ghost]
+    pub breaking: Breaking,
+
     /// An amount to shift the text baseline by.
     ///
     /// ```example
@@ -1243,6 +1260,47 @@ cast! {
         }
         Self(flags)
     },
+}
+
+/// How to handle line breaks and spacing.
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct Breaking {
+    pub mode: Smart<BreakingMode>,
+    pub autospace: Smart<bool>,
+}
+
+impl Fold for Breaking {
+    fn fold(self, outer: Self) -> Self {
+        Self {
+            mode: self.mode.or(outer.mode),
+            autospace: self.autospace.or(outer.autospace),
+        }
+    }
+}
+
+cast! {
+    Breaking,
+    self => dict![
+        "mode" => self.mode,
+        "autospace" => self.autospace,
+    ].into_value(),
+    mut v: Dict => {
+        let ret = Self {
+            mode: v.take("mode").ok().map(|v| v.cast()).transpose()?.unwrap_or(Smart::Auto),
+            autospace: v.take("autospace").ok().map(|v| v.cast()).transpose()?.unwrap_or(Smart::Auto),
+        };
+        v.finish(&["mode", "autospace"])?;
+        ret
+    },
+}
+
+/// How to group characters for line breaking.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Cast)]
+pub enum BreakingMode {
+    /// Allow breaks between any characters.
+    Distribute,
+    /// Keep words together.
+    Word,
 }
 
 /// How to handle line breaks in CJK text.
