@@ -106,7 +106,7 @@ pub fn prepare<'a>(
         indices.extend(range.clone().map(|_| i));
     }
 
-    if config.cjk_latin_spacing {
+    if config.breaking.autospace.unwrap_or(true) {
         add_cjk_latin_spacing(&mut items);
     }
 

@@ -343,13 +343,13 @@ fn adjust_cj_at_line_boundaries(p: &Preparation, range: Range, items: &mut Items
     let text = &p.text[range];
 
     if text.starts_with(BEGIN_PUNCT_PAT)
-        || (p.config.cjk_latin_spacing && text.starts_with(is_of_cj_script))
+        || (p.config.breaking.autospace.unwrap_or(true) && text.starts_with(is_of_cj_script))
     {
         adjust_cj_at_line_start(p, items);
     }
 
     if text.ends_with(END_PUNCT_PAT)
-        || (p.config.cjk_latin_spacing && text.ends_with(is_of_cj_script))
+        || (p.config.breaking.autospace.unwrap_or(true) && text.ends_with(is_of_cj_script))
     {
         adjust_cj_at_line_end(p, items);
     }
@@ -382,7 +382,7 @@ fn adjust_cj_at_line_start(p: &Preparation, items: &mut Items) {
         let glyph = shaped.glyphs.to_mut().first_mut().unwrap();
         let shrink = glyph.shrinkability().0;
         glyph.shrink_left(shrink);
-    } else if p.config.cjk_latin_spacing
+    } else if p.config.breaking.autospace.unwrap_or(true)
         && glyph.is_cj_script()
         && glyph.x_offset > Em::zero()
     {
@@ -410,7 +410,7 @@ fn adjust_cj_at_line_end(p: &Preparation, items: &mut Items) {
         let shrink = glyph.shrinkability().1;
         let punct = shaped.glyphs.to_mut().last_mut().unwrap();
         punct.shrink_right(shrink);
-    } else if p.config.cjk_latin_spacing
+    } else if p.config.breaking.autospace.unwrap_or(true)
         && glyph.is_cj_script()
         && (glyph.x_advance - glyph.x_offset) > Em::one()
     {

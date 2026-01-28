@@ -2,6 +2,7 @@ use std::ops::{Add, Sub};
 use std::sync::LazyLock;
 
 use az::SaturatingAs;
+use either::Either;
 use icu_properties::LineBreak;
 use icu_properties::maps::{CodePointMapData, CodePointMapDataBorrowed};
 use icu_provider::AsDeserializingBufferProvider;
@@ -12,22 +13,14 @@ use typst_library::engine::Engine;
 use typst_library::foundations::Smart;
 use typst_library::layout::{Abs, Em};
 use typst_library::model::Linebreaks;
-use typst_library::text::{CjkBreaking, Lang, TextElem};
+use typst_library::text::{BreakingMode, Lang, TextElem};
 use typst_syntax::link_prefix;
-use unicode_script::{Script, UnicodeScript};
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::*;
 
 /// The cost of a line or inline layout.
 type Cost = f64;
-
-/// Whether the character is a CJK character.
-fn is_cjk_script(c: char) -> bool {
-    use Script::*;
-    // U+30FC: Katakana-Hiragana Prolonged Sound Mark
-    matches!(c.script(), Hiragana | Katakana | Han | Hangul) || c == '\u{30FC}'
-}
 
 // Cost parameters.
 //
@@ -700,13 +693,18 @@ fn breakpoints(p: &Preparation, mut f: impl FnMut(usize, Breakpoint)) {
 
     let hyphenate = p.config.hyphenate != Some(false);
     let lb = LINEBREAK_DATA.as_borrowed();
-    let segmenter = match p.config.lang {
-        Some(Lang::CHINESE | Lang::JAPANESE) => &CJ_SEGMENTER,
-        _ => &SEGMENTER,
+    let segmenter_iter = if matches!(p.config.breaking.mode, Smart::Custom(BreakingMode::Distribute)) {
+        Either::Left(text.grapheme_indices(true).map(|(i, s)| i + s.len()))
+    } else {
+        let segmenter = match p.config.lang {
+            Some(Lang::CHINESE | Lang::JAPANESE) => &CJ_SEGMENTER,
+            _ => &SEGMENTER,
+        };
+        Either::Right(segmenter.segment_str(text))
     };
 
     let mut last = 0;
-    let mut iter = segmenter.segment_str(text).peekable();
+    let mut iter = segmenter_iter.peekable();
 
     loop {
         // Special case for links. UAX #14 doesn't handle them well.
@@ -727,24 +725,10 @@ fn breakpoints(p: &Preparation, mut f: impl FnMut(usize, Breakpoint)) {
         // at offset 0, but we don't want it.
         let Some(c) = text[..point].chars().next_back() else { continue };
 
-        // If cjk-breaking is set to 'keep-all' or 'word', we want to skip break
-        // opportunities between two CJK characters.
-        #[allow(clippy::collapsible_if)]
-        if matches!(p.config.cjk_breaking, Smart::Custom(CjkBreaking::KeepAll))
-            && point < text.len()
-        {
-            if let Some(next_c) = text[point..].chars().next() {
-                if is_cjk_script(c) && is_cjk_script(next_c) {
-                    continue;
-                }
-            }
-        }
-
-        // If cjk-breaking is set to 'word', we want to skip break opportunities
+        // If breaking mode is 'word', we want to skip break opportunities
         // unless they are at a whitespace boundary (e.g. between a word and a
         // space). This effectively tokenizes by whitespace.
-        #[allow(clippy::collapsible_if)]
-        if matches!(p.config.cjk_breaking, Smart::Custom(CjkBreaking::Whitespace))
+        if matches!(p.config.breaking.mode, Smart::Custom(BreakingMode::Word))
             && point < text.len()
         {
             if let Some(next_c) = text[point..].chars().next() {
